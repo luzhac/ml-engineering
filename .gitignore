@@ -1,0 +1,62 @@
+# =====================
+# Python
+# =====================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# =====================
+# Virtual environments
+# =====================
+.venv/
+venv/
+ENV/
+env/
+
+# =====================
+# Jupyter
+# =====================
+.ipynb_checkpoints/
+
+# =====================
+# Data / datasets
+# =====================
+data/
+datasets/
+*.csv
+*.parquet
+*.feather
+*.jsonl
+
+# =====================
+# Models / ML artifacts
+# =====================
+models/**/*.pt
+models/**/*.pth
+models/**/*.pkl
+models/**/*.joblib
+models/**/*.onnx
+mlruns/
+
+# =====================
+# Env / secrets
+# =====================
+.env
+.env.*
+*.env
+.aws/
+
+# =====================
+# Docker / logs
+# =====================
+*.log
+
+# =====================
+# IDE / OS
+# =====================
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
