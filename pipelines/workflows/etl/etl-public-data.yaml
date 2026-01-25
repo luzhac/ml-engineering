@@ -1,0 +1,60 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: etl-public-data-
+  namespace: argo
+spec:
+  serviceAccountName: argo-workflow
+  entrypoint: etl
+
+  volumes:
+    - name: etl-data
+      hostPath:
+        path: /mnt/etl-data
+        type: Directory
+
+  templates:
+  - name: etl
+    steps:
+      - - name: fetch-data
+          template: fetch
+      - - name: process-data
+          template: process
+      - - name: show-result
+          template: show
+
+  # ======================
+  # Step 1: Fetch data (ECR)
+  # ======================
+  - name: fetch
+    container:
+      image: 173381466759.dkr.ecr.ap-northeast-1.amazonaws.com/etl-fetcher:latest
+      volumeMounts:
+        - name: etl-data
+          mountPath: /data
+
+  # ======================
+  # Step 2: Process data (ECR)
+  # ======================
+  - name: process
+    container:
+      image: 173381466759.dkr.ecr.ap-northeast-1.amazonaws.com/etl-processor:latest
+      volumeMounts:
+        - name: etl-data
+          mountPath: /data
+
+  # ======================
+  # Step 3: Show result
+  # ======================
+  - name: show
+    container:
+      image: alpine:3.18
+      volumeMounts:
+        - name: etl-data
+          mountPath: /data
+      command: [sh, -c]
+      args:
+        - |
+          echo "Files in /data:"
+          ls -l /data
+          echo "ETL pipeline finished successfully"

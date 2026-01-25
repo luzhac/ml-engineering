@@ -1,0 +1,33 @@
+# argo-workflow-clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: argo-workflow
+rules:
+  # Argo workflow CRDs
+  - apiGroups: ["argoproj.io"]
+    resources:
+      - workflows
+      - workflowtemplates
+      - cronworkflows
+      - workflowtaskresults
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+  # Pods / logs
+  - apiGroups: [""]
+    resources:
+      - pods
+      - pods/log
+    verbs: ["get", "list", "watch"]
+
+  # Events
+  - apiGroups: [""]
+    resources:
+      - events
+    verbs: ["create", "patch"]
+
+  # Needed for executor
+  - apiGroups: [""]
+    resources:
+      - serviceaccounts
+    verbs: ["get"]

@@ -1,0 +1,169 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: iris-ml-pipeline-
+  namespace: argo
+spec:
+  entrypoint: iris-pipeline
+  serviceAccountName: argo-workflow
+
+  # Shared volume for passing data between steps
+  volumeClaimTemplates:
+    - metadata:
+        name: workdir
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 100Mi
+
+  templates:
+    # Main DAG pipeline
+    - name: iris-pipeline
+      dag:
+        tasks:
+          - name: fetch-data
+            template: fetch-data-template
+
+          - name: process-data
+            template: process-data-template
+            dependencies: [fetch-data]
+
+          - name: display-results
+            template: display-results-template
+            dependencies: [process-data]
+
+    # Using script template instead of container
+    - name: fetch-data-template
+      script:
+        image: python:3.11-slim
+        command: [python]
+        source: |
+          import requests
+          import pandas as pd
+          import subprocess
+          import sys
+          
+          # Install required packages
+          subprocess.run(["pip", "install", "requests", "pandas", "-q"], check=True)
+          
+          url = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv"
+          
+          print("=" * 50)
+          print("STEP 1: FETCHING DATA")
+          print("=" * 50)
+          print(f"Downloading from: {url}")
+          
+          response = requests.get(url)
+          
+          with open("/mnt/data/iris_raw.csv", "w") as f:
+              f.write(response.text)
+          
+          df = pd.read_csv("/mnt/data/iris_raw.csv")
+          print(f"Downloaded {len(df)} records")
+          print(f"Columns: {list(df.columns)}")
+          print(f"Saved to /mnt/data/iris_raw.csv")
+        volumeMounts:
+          - name: workdir
+            mountPath: /mnt/data
+
+    - name: process-data-template
+      script:
+        image: python:3.11-slim
+        command: [python]
+        source: |
+          import subprocess
+          subprocess.run(["pip", "install", "pandas", "scikit-learn", "-q"], check=True)
+          
+          import pandas as pd
+          import json
+          from sklearn.preprocessing import LabelEncoder, StandardScaler
+          
+          print("=" * 50)
+          print("STEP 2: PROCESSING DATA")
+          print("=" * 50)
+          
+          df = pd.read_csv("/mnt/data/iris_raw.csv")
+          print(f"Loaded {len(df)} records")
+          
+          print("\nComputing statistics...")
+          
+          numeric_cols = ['sepal_length', 'sepal_width', 'petal_length', 'petal_width']
+          
+          le = LabelEncoder()
+          df['species_encoded'] = le.fit_transform(df['species'])
+          
+          scaler = StandardScaler()
+          df_normalized = df.copy()
+          df_normalized[numeric_cols] = scaler.fit_transform(df[numeric_cols])
+          
+          species_counts = df['species'].value_counts().to_dict()
+          
+          df_normalized.to_csv("/mnt/data/iris_processed.csv", index=False)
+          
+          results = {
+              "total_records": len(df),
+              "species_counts": species_counts,
+              "feature_means": df[numeric_cols].mean().to_dict(),
+              "feature_stds": df[numeric_cols].std().to_dict(),
+          }
+          
+          with open("/mnt/data/statistics.json", "w") as f:
+              json.dump(results, f, indent=2)
+          
+          print("Encoded species labels")
+          print("Normalized numeric features")
+          print("Saved processed data")
+        volumeMounts:
+          - name: workdir
+            mountPath: /mnt/data
+
+    - name: display-results-template
+      script:
+        image: python:3.11-slim
+        command: [python]
+        source: |
+          import subprocess
+          subprocess.run(["pip", "install", "pandas", "tabulate", "-q"], check=True)
+          
+          import pandas as pd
+          import json
+          from tabulate import tabulate
+          
+          print("=" * 60)
+          print("STEP 3: DISPLAYING RESULTS")
+          print("=" * 60)
+          
+          df = pd.read_csv("/mnt/data/iris_processed.csv")
+          
+          with open("/mnt/data/statistics.json", "r") as f:
+              stats = json.load(f)
+          
+          print(f"\nTotal Records: {stats['total_records']}")
+          
+          print("\nSPECIES DISTRIBUTION")
+          print("-" * 40)
+          for species, count in stats['species_counts'].items():
+              print(f"  {species}: {count} samples")
+          
+          print("\nFEATURE STATISTICS")
+          print("-" * 40)
+          stats_table = []
+          for feature in stats['feature_means'].keys():
+              stats_table.append([
+                  feature,
+                  f"{stats['feature_means'][feature]:.3f}",
+                  f"{stats['feature_stds'][feature]:.3f}"
+              ])
+          print(tabulate(stats_table, headers=['Feature', 'Mean', 'Std Dev']))
+          
+          print("\nPROCESSED DATA SAMPLE (First 5 rows)")
+          print("-" * 40)
+          print(tabulate(df.head(5), headers='keys', tablefmt='simple', showindex=False))
+          
+          print("\n" + "=" * 60)
+          print("PIPELINE COMPLETED SUCCESSFULLY!")
+          print("=" * 60)
+        volumeMounts:
+          - name: workdir
+            mountPath: /mnt/data

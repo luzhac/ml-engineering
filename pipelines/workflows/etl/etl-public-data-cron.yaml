@@ -1,0 +1,71 @@
+apiVersion: argoproj.io/v1alpha1
+kind: CronWorkflow
+metadata:
+  name: etl-public-data-daily
+  namespace: argo
+spec:
+  schedule: "0 2 * * *"        # 每天 02:00
+  timezone: "UTC"              # 可选：明确指定时区
+  concurrencyPolicy: "Forbid"  # 上一次没跑完，不启动新的
+  startingDeadlineSeconds: 600 # 错过 10 分钟内还能补跑
+  suspend: false               # 是否暂停定时任务
+
+  workflowSpec:
+    serviceAccountName: argo-workflow
+    entrypoint: etl
+
+    volumes:
+      - name: etl-data
+        hostPath:
+          path: /mnt/etl-data
+          type: Directory
+
+    templates:
+      - name: etl
+        steps:
+          - - name: fetch-data
+              template: fetch
+          - - name: process-data
+              template: process
+          - - name: show-result
+              template: show
+
+      # ======================
+      # Step 1: Fetch
+      # ======================
+      - name: fetch
+        container:
+          image: 173381466759.dkr.ecr.ap-northeast-1.amazonaws.com/etl-fetcher:latest
+          volumeMounts:
+            - name: etl-data
+              mountPath: /data
+
+      # ======================
+      # Step 2: Process
+      # ======================
+      - name: process
+        container:
+          image: 173381466759.dkr.ecr.ap-northeast-1.amazonaws.com/etl-processor:latest
+          volumeMounts:
+            - name: etl-data
+              mountPath: /data
+
+      # ======================
+      # Step 3: Show
+      # ======================
+      - name: show
+        container:
+          image: alpine:3.18
+          volumeMounts:
+            - name: etl-data
+              mountPath: /data
+          command: [sh, -c]
+          args:
+            - |
+              echo "Files in /data:"
+              ls -l /data
+              echo "ETL pipeline finished successfully"
+
+    ttlStrategy:
+      secondsAfterSuccess: 3600
+      secondsAfterFailure: 3600
