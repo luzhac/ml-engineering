@@ -9,13 +9,13 @@ from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # =========================
-# 全局统计
+#
 # =========================
 symbol_download_counts = defaultdict(int)
 download_lock = Lock()
 
 # =========================
-# 配置
+#
 # =========================
 FREQUENCY = "daily"  # daily | monthly
 INTERVAL = "1m"
@@ -34,7 +34,7 @@ CURRENT_DAY = datetime.now().day
 
 
 # =========================
-# 1️⃣ 获取 USDT 永续合约 symbols（官方 API）
+#
 # =========================
 def get_usdt_perp_symbols():
     print("📡 Fetching symbols from Binance Futures API...")
@@ -56,7 +56,7 @@ def get_usdt_perp_symbols():
 
 
 # =========================
-# 2️⃣ 构造 zip 下载 URL
+#
 # =========================
 def build_urls(symbols, year=TARGET_YEAR, interval=INTERVAL):
     urls = []
@@ -77,7 +77,7 @@ def build_urls(symbols, year=TARGET_YEAR, interval=INTERVAL):
 
 
 # =========================
-# 3️⃣ 下载 & 解压
+#
 # =========================
 def download_zip_from_url(zip_url):
     filename = zip_url.split("/")[-1]
@@ -89,7 +89,7 @@ def download_zip_from_url(zip_url):
     zip_path = os.path.join(symbol_dir, filename.replace(".zip", ""))
 
     # =========================
-    # ✅ 已存在就跳过
+    #
     # =========================
     if os.path.exists(zip_path):
         print(f"⏭️  Skip existing {symbol}/{filename}")
@@ -116,12 +116,12 @@ def download_zip_from_url(zip_url):
 
 
 # =========================
-# 4️⃣ 主流程
+# 4
 # =========================
 def main():
     symbols = get_usdt_perp_symbols()
 
-    # 如需手动限制（调试用）
+
     # symbols = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
 
     urls = build_urls(symbols)

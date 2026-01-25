@@ -12,6 +12,7 @@ choco install k3d -y
 
 k3d version
 
+### mount 
 k3d cluster create dev \
   --servers 1 \
   --agents 2 \
@@ -77,4 +78,7 @@ kubectl patch serviceaccount argo-workflow \
   -p '{"imagePullSecrets":[{"name":"ecr-secret"}]}'
 
 kubectl get sa argo-workflow -n argo -o yaml
+
+
+## mount local disk
 
