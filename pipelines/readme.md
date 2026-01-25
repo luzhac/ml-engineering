@@ -58,11 +58,11 @@ aws ecr get-login-password \
   --region ap-northeast-1 \
 | docker login \
   --username AWS \
-  --password-stdin your-id.dkr.ecr.ap-northeast-1.amazonaws.com
+  --password-stdin 173381466759.dkr.ecr.ap-northeast-1.amazonaws.com
 
 
  kubectl create secret docker-registry ecr-secret \
-  --docker-server=your-id.dkr.ecr.ap-northeast-1.amazonaws.com \
+  --docker-server=173381466759.dkr.ecr.ap-northeast-1.amazonaws.com \
   --docker-username=AWS \
   --docker-password="$(aws ecr get-login-password --region ap-northeast-1)" \
   --namespace argo
