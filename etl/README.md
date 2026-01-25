@@ -1,0 +1,1 @@
+Include etl docker image file used for argo pipline.
