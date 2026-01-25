@@ -52,4 +52,4 @@ jobs:
           docker buildx build \
             -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
             --push \
-            ai-platform/etl/processor
+            etl/processor
