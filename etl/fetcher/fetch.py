@@ -72,7 +72,6 @@ def build_urls(symbols, year=TARGET_YEAR, interval=INTERVAL):
     return urls
 
 
-
 def download_zip_from_url(zip_url):
     filename = zip_url.split("/")[-1]
     symbol = zip_url.split("/")[-3]
